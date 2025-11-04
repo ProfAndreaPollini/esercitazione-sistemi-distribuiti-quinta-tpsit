@@ -94,7 +94,6 @@ Lo strumento per risolvere questo problema è un load balancer, che distribuisce
 Prova ad avviare più istanze del server Flask su porte diverse:
 
 ```bash
-python apps/app.py --port 5000
 python apps/app.py --port 5001
 python apps/app.py --port 5002
 ```
@@ -103,4 +102,112 @@ Ora dobbiamo creare il load balancer. Come potrebbe essere realizzato? Prova a f
 
 ```bash
 git checkout load-balancer
+```
+
+In questo branch, ho creato un semplice load balancer che distribuisce le richieste tra le istanze del server Flask in modo round-robin. Ora puoi eseguire nuovamente i test per vedere come il load balancer migliora la gestione del carico di richieste.
+
+```bash
+python .\tests\testo_app.py --min 10 --max 100 --step 10   
+warning: `VIRTUAL_ENV=.venv` does not match the project environment path `C:\Users\profa\Documents\GitHub\.venv` and will be ignored
+Avvio test di carico su http://127.0.0.1:5000/
+Configurazione: Min=10, Max=100, Step=10
+
+--- Test con 10 richieste parallele ---
+Completato in: 0.6201 secondi
+Richieste totali: 10
+  - Successo: 10
+  - Fallite:  0
+Performance:  16.13 RPS (Richieste al Secondo)
+--------------------------------------------------
+
+--- Test con 20 richieste parallele ---
+Completato in: 1.2145 secondi
+Richieste totali: 20
+  - Successo: 20
+  - Fallite:  0
+Performance:  16.47 RPS (Richieste al Secondo)
+--------------------------------------------------
+
+--- Test con 30 richieste parallele ---
+Completato in: 1.8119 secondi
+Richieste totali: 30
+  - Successo: 30
+  - Fallite:  0
+Performance:  16.56 RPS (Richieste al Secondo)
+--------------------------------------------------
+
+--- Test con 40 richieste parallele ---
+Completato in: 2.4094 secondi
+Richieste totali: 40
+  - Successo: 40
+  - Fallite:  0
+Performance:  16.60 RPS (Richieste al Secondo)
+--------------------------------------------------
+
+--- Test con 50 richieste parallele ---
+Completato in: 3.0365 secondi
+Richieste totali: 50
+  - Successo: 50
+  - Fallite:  0
+Performance:  16.47 RPS (Richieste al Secondo)
+--------------------------------------------------
+
+--- Test con 60 richieste parallele ---
+Completato in: 3.5907 secondi
+Richieste totali: 60
+  - Successo: 60
+  - Fallite:  0
+Performance:  16.71 RPS (Richieste al Secondo)
+--------------------------------------------------
+
+--- Test con 70 richieste parallele ---
+Completato in: 4.1629 secondi
+Richieste totali: 70
+  - Successo: 70
+  - Fallite:  0
+Performance:  16.82 RPS (Richieste al Secondo)
+--------------------------------------------------
+
+--- Test con 80 richieste parallele ---
+Completato in: 4.7324 secondi
+Richieste totali: 80
+  - Successo: 80
+  - Fallite:  0
+Performance:  16.90 RPS (Richieste al Secondo)
+```
+
+In questo modo, abbiamo migliorato significativamente la capacità del sistema di gestire un carico di richieste elevato utilizzando un semplice load balancer. Nota che per un'applicazione di produzione, si dovrebbe considerare l'uso di soluzioni di load balancing più robuste e scalabili come Nginx, HAProxy o servizi cloud dedicati.
+
+**Analizziamo insieme cosa stai vedendo:**
+
+**Tempo di Calcolo:**
+
+- Con 10 richieste, il tempo totale è 0.62s. Il LB le divide: 5 al server 1, 5 al server 2. Lavorando in parallelo, il test finisce quando entrambi hanno gestito le loro 5 richieste.
+
+- Con 20 richieste (10 per server), il tempo è 1.21s (circa il doppio).
+
+- Con 30 richieste (15 per server), il tempo è 1.81s (circa il triplo).
+
+Possiamo stimare che il tuo heavy_computation impieghi circa 120ms (0.12 secondi) sulla tua macchina.
+
+**Performance (RPS):**
+
+Se un server impiega 0.12s per richiesta, la sua capacità massima (il suo "tetto") è: 1 / 0.120s = ~8.3 RPS.
+
+Con un solo server (Passo 1, CPU-bound), avresti visto le performance crollare e stabilizzarsi proprio intorno a 8-9 RPS.
+
+Tu hai due server. La tua capacità teorica totale è: 8.3 RPS * 2 = ~16.6 RPS.
+
+**Le tue performance si stabilizzano esattamente intorno a 16.1 - 16.9 RPS.**
+
+Hai dimostrato che aggiungendo un secondo server e un load balancer hai raddoppiato la capacità di carico del tuo sistema. Non importa quante richieste aggiungi (fino a 100 nel test), il sistema non può andare più veloce di ~16.6 RPS, perché tutte le tue risorse (i 2 server) sono sature al 100%.
+
+il problema ora resta quello della lista statica dei server nel load balancer. In un sistema reale, vorresti che il load balancer scoprisse dinamicamente le istanze del server (ad esempio, tramite un servizio di registrazione o un orchestratore come Kubernetes) piuttosto che avere una lista hardcoded.
+
+Noi risolveremo il problema introducendo un servizio di discovery, ma questa è un'altra storia! 
+
+per vedere il branch successivo con il servizio di discovery fai:
+
+```bash
+git checkout service-discovery
 ```
